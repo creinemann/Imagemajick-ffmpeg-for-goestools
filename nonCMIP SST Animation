@@ -1,0 +1,17 @@
+REM 4/5/2020 FULL DISK NOMAP
+REM REDUCE FILESIZE
+for /r "F:\Satellite Imagery\goes16\non-cmip\fd\sst\" %%a in (*.jpg) do "C:\Program Files\ImageMagick-7.0.9-Q16\magick.exe"  mogrify -path ../noncmipsst -filter Triangle -define filter:support=2 -thumbnail 2000 -unsharp 0.25x0.25+8+0.065 -dither None -posterize 136 -quality 82 -define jpeg:fancy-upsampling=off -define png:compression-filter=5 -define png:compression-level=9 -define png:compression-strategy=1 -define png:exclude-chunk=all -interlace none -colorspace sRGB -strip "%%~a"
+
+
+REM ADD WATERMARK TO REDUCED FULL DISK IMAGE
+magick mogrify -path "F:/noncmipsst/noncmipsstWATERMARKED/" -format jpg -gravity northwest -draw "image over 30,30 0,0 'F:/Satellite Imagery/GOESFULLDISKWHITE500x100.png'" "F:/noncmipsst/*.jpg"
+REM CREATE GIF
+magick convert -loop 0 -delay 15 "F:\noncmipsst\noncmipsstWATERMARKED\GOES16_*.jpg" "F:/noncmipsst/noncmipsstFINAL/SSTout.gif"
+
+REM CREATE MP4
+ffmpeg -i "F:/noncmipsst/noncmipsstFINAL/SSTout.gif" -filter "minterpolate='mi_mode=blend'" -c:v libx264 -pix_fmt yuv420p "F:/noncmipsst/noncmipsstFINAL/SSTout.mp4"
+
+del "F:\noncmipsst\noncmipsstWATERMARKED\*.*" /s /f /q
+del "F:\noncmipsst\noncmipsst\*.*" /s /f /q
+
+pause
