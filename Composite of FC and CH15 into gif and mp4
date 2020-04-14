@@ -1,0 +1,66 @@
+REM Build Imagery for Compositing 4/13/2020
+REM MOVE and rename Full disks
+
+for /r "F:\Satellite Imagery\goes16\fd\NOMAP\" %%a in (*.jpg) do "C:\Program Files\ImageMagick-7.0.9-Q16\magick.exe"  mogrify -path ../compositeFC -filter Triangle -define filter:support=2 -thumbnail 1000 -unsharp 0.25x0.25+8+0.065 -dither None -posterize 136 -quality 82 -define jpeg:fancy-upsampling=off -define png:compression-filter=5 -define png:compression-level=9 -define png:compression-strategy=1 -define png:exclude-chunk=all -interlace none -colorspace sRGB -strip  -gravity south -stroke none -pointsize 24 -fill white -font Ailerons -annotate +0+0 GOES_16_FC_and_Channel_15 "%%~a"
+
+
+for /r "F:\Satellite Imagery\goes16\fd\ch15_enhanced\" %%a in (*.jpg) do "C:\Program Files\ImageMagick-7.0.9-Q16\magick.exe"  mogrify -path ../composite15 -filter Triangle -define filter:support=2 -thumbnail 1000 -unsharp 0.25x0.25+8+0.065 -dither None -posterize 136 -quality 82 -define jpeg:fancy-upsampling=off -define png:compression-filter=5 -define png:compression-level=9 -define png:compression-strategy=1 -define png:exclude-chunk=all -interlace none -colorspace sRGB -strip  -gravity south -stroke none -pointsize 24 -fill white -font Ailerons -annotate +0+0 GOES_16_FC_and_Channel_15 "%%~a"
+
+
+echo CHECK FILE COUNT TO BE SURE IT"S EQUAL BEFORE CONTINUING
+Pause
+
+echo start compositing False Color into Channel_15 Enhanced
+
+setlocal enabledelayedexpansion
+
+set dirA=F:\compositeFC\
+set dirB=F:\composite15\
+set dirOut=F:\compositedimages\
+
+dir /b /on %dirA%*.jpg >listA.lis
+
+set cntA=0
+for /F "tokens=*" %%F in (listA.lis) do (
+  set listA[!cntA!]=%%F
+  set /A cntA+=1
+)
+
+echo There are %cntA% file in list A.
+
+
+dir /b /on %dirB%*.jpg >listB.lis
+
+set cntB=0
+for /F "tokens=*" %%F in (listB.lis) do (
+  set listB[!cntB!]=%%F
+  set /A cntB+=1
+)
+
+echo There are %cntB% file in list B.
+
+if not %cntA%==%cntB% (
+  echo The lists have different numbers of files.
+  exit /B 1
+)
+
+set /A lastN=%cntA%-1
+
+for /L %%N in (0,1,%lastN%) do (
+  echo %%N: composite %dirB%!listB[%%N]! and %dirA%!listA[%%N]!
+
+  rem magick.exe composite -blend 50 %dirB%!listB[%%N]! %dirA%!listA[%%N]! %dirOut%!listA[%%N]!
+  magick %dirA%!listA[%%N]! %dirB%!listB[%%N]! -define compose:args=50 -compose blend -composite %dirOut%!listA[%%N]!
+  rem magick %dirA%!listA[%%N]! { %dirB%!listB[%%N]! -transparent black } -define compose:args=50 -compose blend -composite %dirOut%!listA[%%N]!
+)
+
+REM ADD WATERMARK TO THE REDUCED FULL DISK IMAGE
+magick mogrify -path "F:/compositefinal/" -format jpg -gravity northwest -draw "image over 15,15 0,0 'F:/Satellite Imagery/GOESFULLDISKWHITE250x50.png'" "F:/compositedimages/*.jpg"
+
+REM CREATE GIF
+magick convert -loop 0 -delay 25 "F:\compositefinal\GOES16_*" "F:/compositefinal/compositeout.gif"
+
+REM CREATE MP4
+ffmpeg -i "F:/compositefinal/compositeout.gif" -filter "minterpolate='mi_mode=blend'" -c:v libx264 -pix_fmt yuv420p "F:/compositefinal/compositeout.mp4"
+
+PAUSE
