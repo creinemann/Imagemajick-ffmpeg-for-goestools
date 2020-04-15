@@ -50,7 +50,7 @@ for /L %%N in (0,1,%lastN%) do (
   echo %%N: composite %dirB%!listB[%%N]! and %dirA%!listA[%%N]!
 
   rem magick.exe composite -blend 50 %dirB%!listB[%%N]! %dirA%!listA[%%N]! %dirOut%!listA[%%N]!
-  magick %dirA%!listA[%%N] %dirB%!listB[%%N]! -define compose:args=50 -compose blend -composite %dirOut%!listA[%%N]!
+  magick %dirA%!listA[%%N] %dirB%!listB[%%N] -define compose:args=50 -compose blend -composite %dirOut%!listA[%%N]!
   rem magick %dirA%!listA[%%N]! { %dirB%!listB[%%N]! -transparent black } -define compose:args=50 -compose blend -composite %dirOut%!listA[%%N]!
 )
 
